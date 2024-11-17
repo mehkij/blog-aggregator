@@ -7,8 +7,9 @@ import (
 
 func Read() (Config, error) {
 	filepath, err := getConfigFilePath()
+	// If the file doesn't exist, create it
 	if err != nil {
-		return Config{}, err
+		write(Config{})
 	}
 
 	jsonData, err := os.ReadFile(filepath)
