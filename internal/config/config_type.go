@@ -53,15 +53,19 @@ func write(cfg Config) error {
 		return err
 	}
 
-	data, err := json.Marshal(cfg)
+	file, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(cfg)
 	if err != nil {
 		return err
 	}
 
-	// 0644: Owner can read/write; others can read
-	e := os.WriteFile(filepath, data, 0644)
-
-	return e
+	return nil
 }
 
 func (c *Config) SetUser(username string) error {
