@@ -28,6 +28,7 @@ func main() {
 
 	cmds.register("login", handlerLogin)
 
+	// 1st arg is program name, which we ignore.
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: cli <command> [args...]")
 		os.Exit(1)
