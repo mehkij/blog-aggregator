@@ -13,22 +13,25 @@ type Config struct {
 }
 
 func Read() (Config, error) {
-	filepath, err := getConfigFilePath()
-	// If the file doesn't exist, create it
-	if err != nil {
-		write(Config{})
-	}
-
-	jsonData, err := os.ReadFile(filepath)
+	fullPath, err := getConfigFilePath()
 	if err != nil {
 		return Config{}, err
 	}
 
-	var config Config
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return Config{}, err
+	}
+	defer file.Close()
 
-	e := json.Unmarshal(jsonData, &config)
+	decoder := json.NewDecoder(file)
+	cfg := Config{}
+	err = decoder.Decode(&cfg)
+	if err != nil {
+		return Config{}, err
+	}
 
-	return config, e
+	return cfg, nil
 }
 
 func getConfigFilePath() (string, error) {
