@@ -12,6 +12,25 @@ type Config struct {
 	CurrentUserName string `json:"current_user_name"`
 }
 
+func Read() (Config, error) {
+	filepath, err := getConfigFilePath()
+	// If the file doesn't exist, create it
+	if err != nil {
+		write(Config{})
+	}
+
+	jsonData, err := os.ReadFile(filepath)
+	if err != nil {
+		return Config{}, err
+	}
+
+	var config Config
+
+	e := json.Unmarshal(jsonData, &config)
+
+	return config, e
+}
+
 func getConfigFilePath() (string, error) {
 	var filepath string
 
