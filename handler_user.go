@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,7 +14,12 @@ func handlerLogin(s *state, cmd command) error {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
 	}
 
-	err := s.config.SetUser(cmd.Args[0])
+	_, err := s.db.GetUser(context.Background(), cmd.Args[0])
+	if err != nil {
+		return fmt.Errorf("could not find user: %w", err)
+	}
+
+	err = s.config.SetUser(cmd.Args[0])
 	if err != nil {
 		return fmt.Errorf("couldn't set the current user: %w", err)
 	}
@@ -30,19 +34,14 @@ func handlerRegister(s *state, cmd command) error {
 		return fmt.Errorf("usage: %s <name>", cmd.Name)
 	}
 
-	username, err := s.db.GetUser(context.Background())
+	user, err := s.db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		Name:      cmd.Args[0],
+	})
 	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-	if username == cmd.Args[0] {
-		fmt.Println("User already exists!")
-		os.Exit(1)
-		return nil
-	}
-
-	user, err := s.db.CreateUser(context.Background(), database.CreateUserParams{ID: uuid.New(), CreatedAt: time.Now(), UpdatedAt: time.Now(), Name: cmd.Args[0]})
-	if err != nil {
-		return fmt.Errorf("%v", err)
+		return fmt.Errorf("couldn't create user: %w", err)
 	}
 
 	err = s.config.SetUser(cmd.Args[0])
