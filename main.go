@@ -1,15 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
 	_ "github.com/lib/pq"
 	"github.com/mehkij/blog-aggregator/internal/config"
+	"github.com/mehkij/blog-aggregator/internal/database"
 )
 
 type state struct {
+	db     *database.Queries
 	config *config.Config
 }
 
@@ -19,7 +22,15 @@ func main() {
 		fmt.Printf("%v\n", err)
 	}
 
+	db, err := sql.Open("postgres", cfg.DbURL)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+	}
+
+	dbQueries := database.New(db)
+
 	programState := &state{
+		db:     dbQueries,
 		config: &cfg,
 	}
 
@@ -28,6 +39,7 @@ func main() {
 	}
 
 	cmds.register("login", handlerLogin)
+	cmds.register("register", handlerRegister)
 
 	// 1st arg is program name, which we ignore.
 	if len(os.Args) < 2 {
