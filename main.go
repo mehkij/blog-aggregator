@@ -43,7 +43,7 @@ func main() {
 	cmds.register("register", handlerRegister)
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
-	cmds.register("agg", handleAgg)
+	cmds.register("agg", handlerAgg)
 
 	// 1st arg is program name, which we ignore.
 	if len(os.Args) < 2 {
