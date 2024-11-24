@@ -26,6 +26,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("%v\n", err)
 	}
+	defer db.Close()
 
 	dbQueries := database.New(db)
 
