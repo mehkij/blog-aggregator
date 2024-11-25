@@ -16,6 +16,7 @@ func handlerListFeeds(s *state, cmd command) error {
 		return fmt.Errorf("could not get users: %w", err)
 	}
 
+	// Potentially inefficient (O(n^2)), can refactor
 	for _, feed := range feeds {
 		for _, user := range users {
 			if feed.UserID == user.ID {
