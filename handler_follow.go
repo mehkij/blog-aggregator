@@ -9,7 +9,7 @@ import (
 	"github.com/mehkij/blog-aggregator/internal/database"
 )
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, user database.User) error {
 	if len(cmd.Args) != 1 {
 		return fmt.Errorf("usage: %s <url>", cmd.Name)
 	}
@@ -17,11 +17,6 @@ func handlerFollow(s *state, cmd command) error {
 	feed, err := s.db.GetFeedByURL(context.Background(), cmd.Args[0])
 	if err != nil {
 		return fmt.Errorf("could not get feed: %w", err)
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("could not get user: %w", err)
 	}
 
 	_, err = s.db.CreateFeedFollows(context.Background(), database.CreateFeedFollowsParams{
@@ -40,12 +35,7 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	user, err := s.db.GetUser(context.Background(), s.config.CurrentUserName)
-	if err != nil {
-		return fmt.Errorf("could not get user: %w", err)
-	}
-
+func handlerFollowing(s *state, cmd command, user database.User) error {
 	following, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
 	if err != nil {
 		return fmt.Errorf("could not get followed feeds: %w", err)
