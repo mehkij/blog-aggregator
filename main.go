@@ -44,6 +44,7 @@ func main() {
 	cmds.register("reset", handlerReset)
 	cmds.register("users", handlerListUsers)
 	cmds.register("agg", handlerAgg)
+	cmds.register("addfeed", handlerAddFeed)
 
 	// 1st arg is program name, which we ignore.
 	if len(os.Args) < 2 {
