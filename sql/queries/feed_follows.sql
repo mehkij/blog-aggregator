@@ -28,3 +28,10 @@ USING feeds
 WHERE feed_follows.feed_id = feeds.id
     AND feed_follows.user_id = $1
     AND feeds.url = $2;
+
+-- name: MarkFeedFetched :exec
+UPDATE feed_follows
+SET 
+    last_fetched_at = $1, 
+    updated_at = $2
+WHERE feed_id = $3;

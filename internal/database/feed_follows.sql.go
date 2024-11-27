@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,10 +17,10 @@ const createFeedFollows = `-- name: CreateFeedFollows :many
 WITH inserted_feed_follows AS (
     INSERT INTO feed_follows (id, created_at, updated_at, user_id, feed_id)
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, created_at, updated_at, user_id, feed_id
+    RETURNING id, created_at, updated_at, user_id, feed_id, last_fetched_at
 )
 SELECT
-    inserted_feed_follows.id, inserted_feed_follows.created_at, inserted_feed_follows.updated_at, inserted_feed_follows.user_id, inserted_feed_follows.feed_id,
+    inserted_feed_follows.id, inserted_feed_follows.created_at, inserted_feed_follows.updated_at, inserted_feed_follows.user_id, inserted_feed_follows.feed_id, inserted_feed_follows.last_fetched_at,
     feeds.name AS feed_name,
     users.name AS user_name
 FROM inserted_feed_follows
@@ -36,13 +37,14 @@ type CreateFeedFollowsParams struct {
 }
 
 type CreateFeedFollowsRow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	FeedID    uuid.UUID
-	FeedName  string
-	UserName  string
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	UserID        uuid.UUID
+	FeedID        uuid.UUID
+	LastFetchedAt sql.NullTime
+	FeedName      string
+	UserName      string
 }
 
 func (q *Queries) CreateFeedFollows(ctx context.Context, arg CreateFeedFollowsParams) ([]CreateFeedFollowsRow, error) {
@@ -66,6 +68,7 @@ func (q *Queries) CreateFeedFollows(ctx context.Context, arg CreateFeedFollowsPa
 			&i.UpdatedAt,
 			&i.UserID,
 			&i.FeedID,
+			&i.LastFetchedAt,
 			&i.FeedName,
 			&i.UserName,
 		); err != nil {
@@ -102,7 +105,7 @@ func (q *Queries) DeleteFeedFollow(ctx context.Context, arg DeleteFeedFollowPara
 
 const getFeedFollowsForUser = `-- name: GetFeedFollowsForUser :many
 SELECT
-    feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.user_id, feed_follows.feed_id,
+    feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.user_id, feed_follows.feed_id, feed_follows.last_fetched_at,
     feeds.name AS feed_name,
     users.name AS user_name
 FROM feed_follows
@@ -112,13 +115,14 @@ WHERE feed_follows.user_id = $1
 `
 
 type GetFeedFollowsForUserRow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	UserID    uuid.UUID
-	FeedID    uuid.UUID
-	FeedName  string
-	UserName  string
+	ID            uuid.UUID
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	UserID        uuid.UUID
+	FeedID        uuid.UUID
+	LastFetchedAt sql.NullTime
+	FeedName      string
+	UserName      string
 }
 
 func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) ([]GetFeedFollowsForUserRow, error) {
@@ -136,6 +140,7 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 			&i.UpdatedAt,
 			&i.UserID,
 			&i.FeedID,
+			&i.LastFetchedAt,
 			&i.FeedName,
 			&i.UserName,
 		); err != nil {
@@ -150,4 +155,23 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const markFeedFetched = `-- name: MarkFeedFetched :exec
+UPDATE feed_follows
+SET 
+    last_fetched_at = $1, 
+    updated_at = $2
+WHERE feed_id = $3
+`
+
+type MarkFeedFetchedParams struct {
+	LastFetchedAt sql.NullTime
+	UpdatedAt     time.Time
+	FeedID        uuid.UUID
+}
+
+func (q *Queries) MarkFeedFetched(ctx context.Context, arg MarkFeedFetchedParams) error {
+	_, err := q.db.ExecContext(ctx, markFeedFetched, arg.LastFetchedAt, arg.UpdatedAt, arg.FeedID)
+	return err
 }
