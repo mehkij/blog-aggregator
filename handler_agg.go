@@ -2,16 +2,55 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"time"
+
+	"github.com/mehkij/blog-aggregator/internal/database"
 )
 
 func handlerAgg(s *state, cmd command) error {
-	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
-	if err != nil {
-		return fmt.Errorf("could not fetch RSSFeed: %w", err)
+	if len(cmd.Args) != 1 {
+		return fmt.Errorf("usage: %s <1s, 1m, 1h...>", cmd.Name)
 	}
 
-	fmt.Printf("%v\n", feed)
+	timeBetweenReqs, err := time.ParseDuration(cmd.Args[0])
+	if err != nil {
+		return fmt.Errorf("could not set time between reqs: %w", err)
+	}
+
+	fmt.Printf("Collecting feeds every %v\n", timeBetweenReqs)
+
+	ticker := time.NewTicker(timeBetweenReqs)
+	for ; ; <-ticker.C {
+		fmt.Println("Sending req...")
+		scrapeFeeds(s)
+	}
+}
+
+func scrapeFeeds(s *state) error {
+	next, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to get feed: %w", err)
+	}
+
+	err = s.db.MarkFeedFetched(context.Background(), database.MarkFeedFetchedParams{
+		LastFetchedAt: sql.NullTime{Time: time.Now().UTC(), Valid: true},
+		UpdatedAt:     time.Now().UTC(),
+		FeedID:        next.FeedID,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to mark feed as fetched: %w", err)
+	}
+
+	feed, err := fetchFeed(context.Background(), next.FeedUrl)
+	if err != nil {
+		return fmt.Errorf("unable to fetch feed: %w", err)
+	}
+
+	for _, item := range feed.Channel.Item {
+		fmt.Printf("* %s\n", item.Title)
+	}
 
 	return nil
 }
