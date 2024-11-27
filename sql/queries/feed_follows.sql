@@ -35,3 +35,18 @@ SET
     last_fetched_at = $1, 
     updated_at = $2
 WHERE feed_id = $3;
+
+-- name: GetNextFeedToFetch :one
+SELECT 
+    f.id AS feed_id,
+    f.url AS feed_url
+FROM 
+    feeds f
+INNER JOIN 
+    feed_follows ff 
+ON 
+    f.id = ff.feed_id
+ORDER BY 
+    ff.last_fetched_at NULLS FIRST, 
+    ff.updated_at ASC
+LIMIT 1;

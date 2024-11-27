@@ -157,6 +157,34 @@ func (q *Queries) GetFeedFollowsForUser(ctx context.Context, userID uuid.UUID) (
 	return items, nil
 }
 
+const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
+SELECT 
+    f.id AS feed_id,
+    f.url AS feed_url
+FROM 
+    feeds f
+INNER JOIN 
+    feed_follows ff 
+ON 
+    f.id = ff.feed_id
+ORDER BY 
+    ff.last_fetched_at NULLS FIRST, 
+    ff.updated_at ASC
+LIMIT 1
+`
+
+type GetNextFeedToFetchRow struct {
+	FeedID  uuid.UUID
+	FeedUrl string
+}
+
+func (q *Queries) GetNextFeedToFetch(ctx context.Context) (GetNextFeedToFetchRow, error) {
+	row := q.db.QueryRowContext(ctx, getNextFeedToFetch)
+	var i GetNextFeedToFetchRow
+	err := row.Scan(&i.FeedID, &i.FeedUrl)
+	return i, err
+}
+
 const markFeedFetched = `-- name: MarkFeedFetched :exec
 UPDATE feed_follows
 SET 
