@@ -11,7 +11,7 @@ import (
 
 func handlerAgg(s *state, cmd command) error {
 	if len(cmd.Args) != 1 {
-		return fmt.Errorf("usage: %s <1s, 1m, 1h...>", cmd.Name)
+		return fmt.Errorf("usage: %s <1s|1m|1h>", cmd.Name)
 	}
 
 	timeBetweenReqs, err := time.ParseDuration(cmd.Args[0])
