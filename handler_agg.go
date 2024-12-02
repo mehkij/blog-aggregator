@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mehkij/blog-aggregator/internal/database"
 )
 
@@ -49,7 +50,19 @@ func scrapeFeeds(s *state) error {
 	}
 
 	for _, item := range feed.Channel.Item {
-		fmt.Printf("* %s\n", item.Title)
+		_, err := s.db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       sql.NullString{String: item.Title, Valid: true},
+			Url:         item.Link,
+			Description: sql.NullString{String: item.Description, Valid: true},
+			PublishedAt: sql.NullString{String: item.PubDate, Valid: true},
+			FeedID:      next.FeedID,
+		})
+		if err != nil {
+			return fmt.Errorf("unable to create post: %w", err)
+		}
 	}
 
 	return nil
