@@ -7,8 +7,8 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
-	"github.com/mehkij/blog-aggregator/internal/config"
-	"github.com/mehkij/blog-aggregator/internal/database"
+	"github.com/mehkij/gator/internal/config"
+	"github.com/mehkij/gator/internal/database"
 )
 
 type state struct {
